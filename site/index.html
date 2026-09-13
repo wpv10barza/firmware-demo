@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ESP32-S3-4848S040 · Firmware 3C</title>
+<style>
+:root{color-scheme:dark;--bg:#071018;--card:#101e29;--line:#294252;--ok:#24c483;--blue:#57b5ff;--muted:#a8bac7}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#123047,var(--bg) 55%);font:16px/1.55 system-ui;color:#eef8ff}
+main{max-width:980px;margin:auto;padding:48px 22px}header,.card{background:#0d1a24e8;border:1px solid var(--line);border-radius:20px;padding:26px;margin-bottom:18px}
+h1{margin:0 0 8px;font-size:clamp(28px,5vw,48px)}h2{margin-top:0}.tag{display:inline-block;color:#042016;background:var(--ok);padding:6px 12px;border-radius:99px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{margin:0}.value{font-size:1.25rem;color:var(--blue);font-weight:700}
+code{background:#061019;padding:3px 7px;border-radius:6px}a{color:#73c6ff}.warning{border-left:4px solid #f0b94b;padding-left:14px;color:#ffe2a3}
+ol{padding-left:22px}footer{color:var(--muted);margin-top:28px}
+</style>
+</head>
+<body><main>
+<header><span class="tag">BUILD REPRODUCIBLE</span><h1>ESP32-S3-4848S040 · Asistente 3C</h1>
+<p>Firmware del panel cuadrado 480×480 conectado al backend consolidado de Ubuntu/WSL.</p></header>
+<section class="grid">
+<div class="card"><h2>Hardware objetivo</h2><div class="value">ESP32-S3 N16R8</div><p>LCD ST7701, táctil GT911, flash QIO 16 MB y PSRAM OPI 8 MB.</p></div>
+<div class="card"><h2>Contrato backend</h2><div class="value">Vista previa + confirmación</div><p>El dispositivo solicita órdenes; nunca escribe directamente en Google Sheets.</p></div>
+<div class="card"><h2>Evidencia CI</h2><div class="value">PlatformIO 6.1.18</div><p><a href="https://github.com/wpv10barza/esp32-firmware-backend-/actions">Ver compilaciones y descargar binarios</a>.</p></div>
+</section>
+<section class="card"><h2>Despliegue físico</h2><ol>
+<li>Clonar el repositorio en Ubuntu/WSL.</li>
+<li>Crear <code>include/local_config.h</code> sin publicarlo.</li>
+<li>Compilar con <code>pio run -e panel_4848s040</code>.</li>
+<li>Cargar por USB con <code>pio run -e panel_4848s040 -t upload</code>.</li>
+<li>Verificar por serial a 115200 baudios y probar el endpoint real.</li>
+</ol><p class="warning">Este sitio acredita publicación y compilación. No sustituye una prueba física del panel, pantalla, táctil o Wi-Fi.</p></section>
+<footer>Fuente derivada y fijada desde wpv10barza/esp32-3C@2ebac821 para trazabilidad de tesis.</footer>
+</main></body></html>
