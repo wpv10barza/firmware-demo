@@ -1,8 +1,10 @@
 .pio/
 .vscode/
 include/local_config.h
+include/firmware_version.generated.h
 *.bin
 *.elf
 *.map
 credentials.json
 .env
+dist/

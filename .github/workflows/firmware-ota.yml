@@ -1,0 +1,152 @@
+name: Firmware OTA
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic firmware version, e.g. 1.0.1"
+        required: false
+        type: string
+      publish_to_databricks:
+        description: "Publish firmware + latest.json to Unity Catalog Volume"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: firmware-ota-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve firmware version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          elif [[ "${GITHUB_REF:-}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="1.0.0"
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be semantic x.y.z: $VERSION" >&2
+            exit 2
+          fi
+          printf '#pragma once\n#define FIRMWARE_VERSION_VALUE "%s"\n' "$VERSION" > include/firmware_version.generated.h
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Reject tracked secrets and LAN backend addresses
+        run: |
+          test ! -f include/local_config.h
+          ! git ls-files | grep -Ei 'credentials|service-account|\.env$'
+          ! grep -R -n -E '192\.168\.|127\.0\.0\.1|3c-backend\.local|PROBAR WSL'             src include platformio.ini README.md
+
+      - name: Validate OTA contract
+        run: python scripts/validate_ota.py
+
+      - name: Install PlatformIO
+        run: pip install platformio==6.2.0
+
+      - name: Compile OTA firmware
+        run: pio run -e panel_4848s040
+
+      - name: Package OTA release
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp .pio/build/panel_4848s040/firmware.bin dist/
+          cp .pio/build/panel_4848s040/bootloader.bin dist/
+          cp .pio/build/panel_4848s040/partitions.bin dist/
+          cp .pio/build/panel_4848s040/firmware.elf dist/
+          export SHA256="$(sha256sum dist/firmware.bin | awk '{print $1}')"
+          export SIZE="$(stat -c%s dist/firmware.bin)"
+          python - <<'PY'
+          import json, os
+          version=os.environ["VERSION"]
+          sha=os.environ["SHA256"]
+          size=int(os.environ["SIZE"])
+          manifest={"version":version,"sha256":sha,"size":size,"channel":"stable"}
+          with open("dist/latest.json","w",encoding="utf-8") as f:
+              json.dump(manifest,f,indent=2)
+              f.write("\n")
+          with open("dist/manifest.json","w",encoding="utf-8") as f:
+              json.dump({
+                  **manifest,
+                  "source_sha":os.environ["GITHUB_SHA"],
+                  "environment":"panel_4848s040",
+                  "validation":"compiled_not_physically_flashed",
+                  "ota":True
+              },f,indent=2)
+              f.write("\n")
+          PY
+          (cd dist && sha256sum firmware.bin bootloader.bin partitions.bin firmware.elf latest.json manifest.json > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esp32-s3-4848s040-ota-${{ steps.version.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_databricks }}
+    needs: build
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      OTA_VOLUME_PATH: ${{ vars.OTA_VOLUME_PATH }}
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: esp32-s3-4848s040-ota-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Validate Databricks variables
+        run: |
+          test -n "$DATABRICKS_HOST"
+          test -n "$DATABRICKS_CLIENT_ID"
+          test -n "$OTA_VOLUME_PATH"
+          [[ "$OTA_VOLUME_PATH" == /Volumes/* ]]
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Publish immutable binary then latest pointer
+        run: |
+          set -euo pipefail
+          ROOT="dbfs:$OTA_VOLUME_PATH/stable"
+          VERSION_DIR="$ROOT/$VERSION"
+          databricks fs mkdir "$ROOT"
+          databricks fs mkdir "$VERSION_DIR"
+          databricks fs cp dist/firmware.bin "$VERSION_DIR/firmware.bin" --overwrite
+          databricks fs cp dist/manifest.json "$VERSION_DIR/manifest.json" --overwrite
+          databricks fs cp dist/latest.json "$ROOT/latest.json" --overwrite
+          databricks fs ls "$VERSION_DIR" -l
+          databricks fs cat "$ROOT/latest.json"
