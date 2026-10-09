@@ -20,7 +20,7 @@
 // Optional hardware identity override.
 // #define DEVICE_ID_VALUE "panel-4848s040-3c-ota-01"
 
-#define DEFAULT_3C_COMMAND_VALUE "Cambia la tarea J10 a mensual"
+#define DEFAULT_3C_COMMAND_VALUE "Cambiar la frecuencia de la tarea 102497 del equipo 99336 a 6 meses."
 #define PANEL_AUDIO_ENABLED_VALUE 1
 #define PANEL_BRIGHTNESS_VALUE 180
 
