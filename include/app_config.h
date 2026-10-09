@@ -44,7 +44,7 @@
 #endif
 
 #ifndef DEFAULT_3C_COMMAND_VALUE
-#define DEFAULT_3C_COMMAND_VALUE "Cambia la tarea J10 a mensual"
+#define DEFAULT_3C_COMMAND_VALUE "Cambiar la frecuencia de la tarea 102497 del equipo 99336 a 6 meses."
 #endif
 #ifndef PANEL_AUDIO_ENABLED_VALUE
 #define PANEL_AUDIO_ENABLED_VALUE 1
