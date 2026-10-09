@@ -8,6 +8,11 @@ CONFIG = (ROOT / "include" / "app_config.h").read_text(encoding="utf-8")
 PARTITIONS = ROOT / "partitions_ota_16mb.csv"
 
 required = [
+    "app_config::touchSwapXy",
+    "app_config::touchMirrorX",
+    "app_config::touchMirrorY",
+    "TOUCH raw=(",
+    "TOUCH KEY label=",
     "Update.begin",
     "Update.write",
     "Update.end(true)",
@@ -20,6 +25,14 @@ required = [
 for needle in required:
     if needle not in MAIN:
         raise AssertionError(f"missing OTA contract: {needle}")
+
+for needle in [
+    "#define TOUCH_SWAP_XY_VALUE 1",
+    "#define TOUCH_MIRROR_X_VALUE 0",
+    "#define TOUCH_MIRROR_Y_VALUE 1",
+]:
+    if needle not in CONFIG:
+        raise AssertionError(f"missing GT911 rotation mapping: {needle}")
 
 for forbidden in ["PROBAR WSL", "WSL DISPONIBLE", "192.168.", "3c-backend.local", "MDNS.queryService"]:
     if forbidden in MAIN or forbidden in CONFIG:
@@ -61,3 +74,4 @@ print("- HTTPS Databricks manifest/download protocol")
 print("- SHA-256 verification before boot switch")
 print("- rollback confirmation hook")
 print("- no WSL/LAN backend dependency")
+print("- GT911 rotation=1 keyboard mapping: swap XY + mirror Y")

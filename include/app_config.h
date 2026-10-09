@@ -53,6 +53,19 @@
 #define PANEL_BRIGHTNESS_VALUE 180
 #endif
 
+// GT911 -> display coordinate transform.
+// Arduino-GFX uses rotation=1 on this square panel. For that orientation the
+// touch controller needs swap XY + mirror Y so visual keys and hit boxes match.
+#ifndef TOUCH_SWAP_XY_VALUE
+#define TOUCH_SWAP_XY_VALUE 1
+#endif
+#ifndef TOUCH_MIRROR_X_VALUE
+#define TOUCH_MIRROR_X_VALUE 0
+#endif
+#ifndef TOUCH_MIRROR_Y_VALUE
+#define TOUCH_MIRROR_Y_VALUE 1
+#endif
+
 #ifndef FIRMWARE_VERSION_VALUE
 #define FIRMWARE_VERSION_VALUE "1.0.0"
 #endif
@@ -74,6 +87,9 @@ static String commandBuffer = DEFAULT_3C_COMMAND_VALUE;
 static String& defaultCommand = commandBuffer;
 static constexpr bool panelAudioEnabled = PANEL_AUDIO_ENABLED_VALUE != 0;
 static constexpr uint8_t panelBrightness = PANEL_BRIGHTNESS_VALUE;
+static constexpr bool touchSwapXy = TOUCH_SWAP_XY_VALUE != 0;
+static constexpr bool touchMirrorX = TOUCH_MIRROR_X_VALUE != 0;
+static constexpr bool touchMirrorY = TOUCH_MIRROR_Y_VALUE != 0;
 static constexpr char firmwareVersion[] = FIRMWARE_VERSION_VALUE;
 static constexpr bool otaAutoUpdate = OTA_AUTO_UPDATE_VALUE != 0;
 static constexpr unsigned long wifiRetryMs = 10000UL;

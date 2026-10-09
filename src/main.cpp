@@ -79,6 +79,8 @@ bool commandEditorOpen = false;
 struct TouchSample {
   bool ready = false;
   bool touched = false;
+  uint16_t rawX = 0;
+  uint16_t rawY = 0;
   uint16_t x = 0;
   uint16_t y = 0;
 };
@@ -413,9 +415,28 @@ TouchSample readTouch() {
     if (i2cRead(kTouchPointRegister, data, sizeof(data))) {
       const uint16_t rawX = data[1] | (static_cast<uint16_t>(data[2]) << 8);
       const uint16_t rawY = data[3] | (static_cast<uint16_t>(data[4]) << 8);
-      // Guition reference uses mirror_x=false / mirror_y=false.
-      sample.x = rawX < kScreenWidth ? rawX : kScreenWidth - 1;
-      sample.y = rawY < kScreenHeight ? rawY : kScreenHeight - 1;
+      sample.rawX = rawX;
+      sample.rawY = rawY;
+
+      // The RGB display is mounted with Arduino-GFX rotation=1. GT911 reports
+      // native panel coordinates, so the touch axes must follow the same
+      // rotation before hit-testing the on-screen keyboard.
+      int32_t mappedX = rawX;
+      int32_t mappedY = rawY;
+      if (app_config::touchSwapXy) {
+        const int32_t temporary = mappedX;
+        mappedX = mappedY;
+        mappedY = temporary;
+      }
+      if (app_config::touchMirrorX) mappedX = (kScreenWidth - 1) - mappedX;
+      if (app_config::touchMirrorY) mappedY = (kScreenHeight - 1) - mappedY;
+      if (mappedX < 0) mappedX = 0;
+      if (mappedY < 0) mappedY = 0;
+      if (mappedX >= kScreenWidth) mappedX = kScreenWidth - 1;
+      if (mappedY >= kScreenHeight) mappedY = kScreenHeight - 1;
+
+      sample.x = static_cast<uint16_t>(mappedX);
+      sample.y = static_cast<uint16_t>(mappedY);
       sample.touched = true;
     }
   }
@@ -1096,10 +1117,19 @@ void handleTouch() {
   const TouchSample sample = readTouch();
   if (!sample.ready) return;
   if (sample.touched && !touchDown) {
+    Serial.printf(
+      "TOUCH raw=(%u,%u) mapped=(%u,%u) swap=%d mx=%d my=%d\n",
+      sample.rawX, sample.rawY, sample.x, sample.y,
+      app_config::touchSwapXy ? 1 : 0,
+      app_config::touchMirrorX ? 1 : 0,
+      app_config::touchMirrorY ? 1 : 0);
     if (commandEditorOpen) {
       if (sample.y >= 216) {
         virtual_keyboard::Key key{};
         if (virtual_keyboard::hitTest(keyboardMode, sample.x, sample.y, &key)) {
+          Serial.printf(
+            "TOUCH KEY label=%s mapped=(%u,%u)\n",
+            key.definition.label, sample.x, sample.y);
           using virtual_keyboard::KeyKind;
           switch (key.definition.kind) {
             case KeyKind::Character:

@@ -24,5 +24,11 @@
 #define PANEL_AUDIO_ENABLED_VALUE 1
 #define PANEL_BRIGHTNESS_VALUE 180
 
+// GT911 calibration for Arduino-GFX display rotation=1.
+// These defaults fix the keyboard case where touching one key selects another.
+#define TOUCH_SWAP_XY_VALUE 1
+#define TOUCH_MIRROR_X_VALUE 0
+#define TOUCH_MIRROR_Y_VALUE 1
+
 // Automatic OTA checks are enabled by default. Set to 0 to require manual check.
 #define OTA_AUTO_UPDATE_VALUE 1

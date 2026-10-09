@@ -86,6 +86,28 @@ Complete solamente los valores privados:
 
 Las URLs cloud ya están preparadas para `asistente-cloud-erp`.
 
+## Corrección del teclado táctil GT911
+
+El panel dibuja la interfaz con `rotation=1`, mientras el GT911 entrega las coordenadas en la orientación nativa. Si se usan esas coordenadas sin transformar, el punto táctil cae sobre la tecla equivocada.
+
+Esta versión aplica antes del `hitTest`:
+
+```text
+swap_xy = true
+mirror_x = false
+mirror_y = true
+```
+
+equivalente a `screen_x = raw_y` y `screen_y = 479 - raw_x` para el panel 480×480. El monitor serie registra cada nueva pulsación como `TOUCH raw=(...) mapped=(...)` y, cuando corresponde al teclado, también muestra `TOUCH KEY label=...`. Esto permite confirmar físicamente que la letra tocada coincide con la insertada.
+
+Los valores son configurables desde `local_config.h` mediante:
+
+```cpp
+#define TOUCH_SWAP_XY_VALUE 1
+#define TOUCH_MIRROR_X_VALUE 0
+#define TOUCH_MIRROR_Y_VALUE 1
+```
+
 ## Prueba inicial de cambio a 6 meses
 
 El firmware arranca con una orden de prueba preconfigurada para el registro indicado:
