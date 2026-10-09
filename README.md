@@ -86,6 +86,16 @@ Complete solamente los valores privados:
 
 Las URLs cloud ya están preparadas para `asistente-cloud-erp`.
 
+## Prueba inicial de cambio a 6 meses
+
+El firmware arranca con una orden de prueba preconfigurada para el registro indicado:
+
+```text
+Cambiar la frecuencia de la tarea 102497 del equipo 99336 a 6 meses.
+```
+
+La orden debe viajar ESP32 → Databricks → propuesta/revisión humana. No debe escribir Google Sheets directamente desde el panel.
+
 ## Compilar el bootstrap
 
 ```bash
